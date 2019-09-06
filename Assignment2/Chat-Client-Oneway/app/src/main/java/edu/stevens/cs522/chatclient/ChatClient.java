@@ -9,6 +9,7 @@ package edu.stevens.cs522.chatclient;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -36,18 +37,19 @@ public class ChatClient extends Activity implements OnClickListener {
 	/*
 	 * Socket used for sending
 	 */
-//  private DatagramSocket clientSocket;
-    private DatagramSendReceive clientSocket;
+  	private DatagramSocket clientSocket;
+//	private DatagramSendReceive clientSocket;
+
+	private int clientPort;
+	private String clientName;
+
 
 	/*
-	 * Widgets for dest address, message text, send button.
+	 * Widgets for dest address, chat name, message text, send button.
 	 */
 	private EditText destinationHost;
-
 	private EditText chatName;
-
 	private EditText messageText;
-	
 	private Button sendButton;
 
 	/*
@@ -57,6 +59,7 @@ public class ChatClient extends Activity implements OnClickListener {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.chat_client);
+
 		
 		/**
 		 * Let's be clear, this is a HACK to allow you to do network communication on the chat_client thread.
@@ -67,22 +70,24 @@ public class ChatClient extends Activity implements OnClickListener {
 		StrictMode.setThreadPolicy(policy);
 
 		// TODO initialize the UI.
-
-
-		
+		destinationHost = (EditText) findViewById(R.id.destination_host);
+		messageText = (EditText) findViewById(R.id.message_text);
+		chatName = (EditText) findViewById(R.id.chat_name);
+		sendButton = (Button) findViewById(R.id.send_button);
 		// End todo
 
 		try {
 
 			int port = getResources().getInteger(R.integer.app_port);
-            clientSocket = new DatagramSendReceive(port);
-            // clientSocket = new DatagramSocket(port);
+            //clientSocket = new DatagramSocket(port);
+			clientSocket = new DatagramSocket(port);
 
 		} catch (IOException e) {
 		    IllegalStateException ex = new IllegalStateException("Cannot open socket");
 		    ex.initCause(e);
 		    throw ex;
 		}
+		sendButton.setOnClickListener(this);
 
 	}
 
@@ -98,16 +103,23 @@ public class ChatClient extends Activity implements OnClickListener {
 			 */
 			
 			InetAddress destAddr;
-			
+
 			int destPort = getResources().getInteger(R.integer.app_port);
 
 			String clientName;
 			
 			byte[] sendData;  // Combine sender and message text; default encoding is UTF-8
+
+			String message = "";
 			
 			// TODO get data from UI (no-op if chat name is blank)
-
-
+			destAddr = InetAddress.getByName(destinationHost.getText().toString());
+			chatName = (EditText) findViewById(R.id.chat_name);
+			messageText = (EditText) findViewById(R.id.message_text);
+			//message = chatName.getText().toString()+ ":" + messageText.getText().toString();
+			message = messageText.getText().toString();
+			sendButton = (Button) findViewById(R.id.send_button);
+			sendData = message.getBytes("UTF-8");
 			// End todo
 
 			Log.d(TAG, String.format("Sending data from address %s:%d", clientSocket.getInetAddress(), clientSocket.getPort()));
@@ -117,8 +129,7 @@ public class ChatClient extends Activity implements OnClickListener {
 
 			clientSocket.send(sendPacket);
 
-			Log.d(TAG, "Sent packet: " + line);
-
+			Log.d(TAG, "Sent packet: " + sendData);
 			
 		} catch (UnknownHostException e) {
 			throw new IllegalStateException("Unknown host exception: " + e.getMessage());
@@ -127,6 +138,7 @@ public class ChatClient extends Activity implements OnClickListener {
 		}
 
 		messageText.setText("");
+
 	}
 
     @Override

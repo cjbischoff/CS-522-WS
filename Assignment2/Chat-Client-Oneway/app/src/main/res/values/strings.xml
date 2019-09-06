@@ -13,6 +13,7 @@
     <string name="destination_host">Destination Host</string>
     <string name="destination_host_default">10.0.2.2</string>
     <string name="chat_name">Chat Name.</string>
+    <string name="chat_name_default">Christopher</string>
     <string name="message_edit_text">Type your message here.</string>
     <string name="send_label">SEND</string>
 </resources>
