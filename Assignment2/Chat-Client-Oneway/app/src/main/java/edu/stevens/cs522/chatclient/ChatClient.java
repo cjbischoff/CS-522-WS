@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import edu.stevens.cs522.base.DatagramSendReceive;
 import edu.stevens.cs522.base.InetAddressUtils;
@@ -38,18 +39,15 @@ public class ChatClient extends Activity implements OnClickListener {
 	 * Socket used for sending
 	 */
   	private DatagramSocket clientSocket;
-//	private DatagramSendReceive clientSocket;
-
-	private int clientPort;
-	private String clientName;
 
 
 	/*
 	 * Widgets for dest address, chat name, message text, send button.
 	 */
-	private EditText destinationHost;
-	private EditText chatName;
-	private EditText messageText;
+	// modified variable names to me preference
+	private EditText editDestinationHost;
+	private EditText editChatName;
+	private EditText editMessageText;
 	private Button sendButton;
 
 	/*
@@ -70,22 +68,20 @@ public class ChatClient extends Activity implements OnClickListener {
 		StrictMode.setThreadPolicy(policy);
 
 		// TODO initialize the UI.
-		destinationHost = (EditText) findViewById(R.id.destination_host);
-		messageText = (EditText) findViewById(R.id.message_text);
-		chatName = (EditText) findViewById(R.id.chat_name);
-		sendButton = (Button) findViewById(R.id.send_button);
+		editDestinationHost = findViewById(R.id.destination_host);
+		editMessageText = findViewById(R.id.message_text);
+		editChatName = findViewById(R.id.chat_name);
+		sendButton = findViewById(R.id.send_button);
 		// End todo
 
 		try {
 
 			int port = getResources().getInteger(R.integer.app_port);
-            //clientSocket = new DatagramSocket(port);
 			clientSocket = new DatagramSocket(port);
 
 		} catch (IOException e) {
-		    IllegalStateException ex = new IllegalStateException("Cannot open socket");
-		    ex.initCause(e);
-		    throw ex;
+		    IllegalStateException ex = new IllegalStateException("ERROR:Cannot open socket", e);
+			throw ex;
 		}
 		sendButton.setOnClickListener(this);
 
@@ -95,49 +91,61 @@ public class ChatClient extends Activity implements OnClickListener {
 	 * Callback for the SEND button.
 	 */
 	public void onClick(View v) {
+
 		try {
 			/*
 			 * On the emulator, which does not support WIFI stack, we'll send to
 			 * (an AVD alias for) the host loopback interface, with the server
 			 * port on the host redirected to the server port on the server AVD.
 			 */
-			
+
 			InetAddress destAddr;
 
-			int destPort = getResources().getInteger(R.integer.app_port);
+			int destPort = getResources().getInteger(R.integer.destination_port_default);
 
+			//variable not used?
 			String clientName;
-			
+
+
 			byte[] sendData;  // Combine sender and message text; default encoding is UTF-8
 
-			String message = "";
-			
+
 			// TODO get data from UI (no-op if chat name is blank)
-			destAddr = InetAddress.getByName(destinationHost.getText().toString());
-			chatName = (EditText) findViewById(R.id.chat_name);
-			messageText = (EditText) findViewById(R.id.message_text);
-			//message = chatName.getText().toString()+ ":" + messageText.getText().toString();
-			message = messageText.getText().toString();
-			sendButton = (Button) findViewById(R.id.send_button);
-			sendData = message.getBytes("UTF-8");
+			destAddr = InetAddress.getByName(editDestinationHost.getText().toString());
+
+			String ChatName = editChatName.getText().toString();
+
+			if(ChatName.isEmpty()){
+				Toast.makeText(getApplicationContext(), "Can not send with EMPTY ChatName!!", Toast.LENGTH_SHORT).show();
+
+			}else {
+				String MessageText = editMessageText.getText().toString();
+
+				Log.d(TAG, MessageText);
+
+				String Message = ChatName + " : " + MessageText;
+
+				//byte buffer
+				sendData = Message.getBytes();
+
+				// This outputs null : -1
+				Log.d(TAG, String.format("Sending data from address %s : %d", clientSocket.getInetAddress(), clientSocket.getPort()));
+
+				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, destAddr, destPort);
+
+				clientSocket.send(sendPacket);
+
+				Log.d(TAG, "Sent packet: " + sendData);
+			}
 			// End todo
 
-			Log.d(TAG, String.format("Sending data from address %s:%d", clientSocket.getInetAddress(), clientSocket.getPort()));
-
-			DatagramPacket sendPacket = new DatagramPacket(sendData,
-					sendData.length, destAddr, destPort);
-
-			clientSocket.send(sendPacket);
-
-			Log.d(TAG, "Sent packet: " + sendData);
-			
 		} catch (UnknownHostException e) {
 			throw new IllegalStateException("Unknown host exception: " + e.getMessage());
 		} catch (IOException e) {
             throw new IllegalStateException("IO exception: " + e.getMessage());
 		}
 
-		messageText.setText("");
+		editMessageText.setText("");
 
 	}
 
