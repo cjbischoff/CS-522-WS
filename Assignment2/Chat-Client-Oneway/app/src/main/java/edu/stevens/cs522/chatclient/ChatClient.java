@@ -38,7 +38,8 @@ public class ChatClient extends Activity implements OnClickListener {
 	/*
 	 * Socket used for sending
 	 */
-  	private DatagramSocket clientSocket;
+	//  private DatagramSocket clientSocket;
+	private DatagramSendReceive clientSocket;
 
 
 	/*
@@ -77,7 +78,8 @@ public class ChatClient extends Activity implements OnClickListener {
 		try {
 
 			int port = getResources().getInteger(R.integer.app_port);
-			clientSocket = new DatagramSocket(port);
+			clientSocket = new DatagramSendReceive(port);
+			// clientSocket = new DatagramSocket(port);
 
 		} catch (IOException e) {
 		    IllegalStateException ex = new IllegalStateException("ERROR:Cannot open socket", e);
@@ -102,6 +104,7 @@ public class ChatClient extends Activity implements OnClickListener {
 			InetAddress destAddr;
 
 			int destPort = getResources().getInteger(R.integer.destination_port_default);
+			Log.d(TAG, String.valueOf(destPort));
 
 			//variable not used?
 			String clientName;
@@ -112,8 +115,11 @@ public class ChatClient extends Activity implements OnClickListener {
 
 			// TODO get data from UI (no-op if chat name is blank)
 			destAddr = InetAddress.getByName(editDestinationHost.getText().toString());
+			Log.d(TAG, String.valueOf(destAddr));
 
 			String ChatName = editChatName.getText().toString();
+			Log.d(TAG, ChatName);
+
 
 			if(ChatName.isEmpty()){
 				Toast.makeText(getApplicationContext(), "Can not send with EMPTY ChatName!!", Toast.LENGTH_SHORT).show();
@@ -122,7 +128,6 @@ public class ChatClient extends Activity implements OnClickListener {
 				String MessageText = editMessageText.getText().toString();
 
 				Log.d(TAG, MessageText);
-
 				String Message = ChatName + " : " + MessageText;
 
 				//byte buffer

@@ -11,8 +11,10 @@
 package edu.stevens.cs522.chatserver.activities;
 
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Date;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -27,10 +29,13 @@ import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 
 import edu.stevens.cs522.base.DatagramSendReceive;
+import edu.stevens.cs522.base.DateUtils;
 import edu.stevens.cs522.chatserver.R;
 import edu.stevens.cs522.chatserver.entities.Peer;
+import edu.stevens.cs522.chatserver.entities.Message;
 
 public class ChatServer extends Activity implements OnClickListener {
 
@@ -52,7 +57,9 @@ public class ChatServer extends Activity implements OnClickListener {
     /*
      * TODO: Declare a listview for messagesAdapter, and an adapter for displaying messagesAdapter.
      */
-
+    private ListView messageList;
+    private ArrayAdapter<String> messageAdapter;
+    private ArrayList<String> messages;
     /*
      * End Todo
      */
@@ -64,8 +71,11 @@ public class ChatServer extends Activity implements OnClickListener {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "OnCreate ChatServer");
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.view_messages);
+
 
         /**
          * Let's be clear, this is a HACK to allow you to do network communication on the view_messages thread.
@@ -80,9 +90,9 @@ public class ChatServer extends Activity implements OnClickListener {
              * Get port information from the resources.
              */
             int port = getResources().getInteger(R.integer.app_port);
+            Log.i(TAG, String.valueOf(port));
 
-            // serverSocket = new DatagramSocket(port);
-
+            //serverSocket = new DatagramSocket(port);
             serverSocket = new DatagramSendReceive(port);
 
         } catch (Exception e) {
@@ -92,10 +102,18 @@ public class ChatServer extends Activity implements OnClickListener {
         // List of peers
         peers = new ArrayList<Peer>();
 
+
         /*
          * TODO: Initialize the UI.
          */
+        messages = new ArrayList<String>();
+        messageList = findViewById(R.id.message_list);
+        messageAdapter = new ArrayAdapter<String>(this, R.layout.message, messages);
+        messageList.setAdapter(messageAdapter);
+        next = findViewById(R.id.next);
+        next.setOnClickListener(this);
 
+       registerForContextMenu(messageList);
 
         /*
          * End Todo
@@ -104,6 +122,7 @@ public class ChatServer extends Activity implements OnClickListener {
     }
 
     public void onClick(View v) {
+        Log.i(TAG, "IN:OnClick ChatServer");
 
         byte[] receiveData = new byte[1024];
 
@@ -111,26 +130,35 @@ public class ChatServer extends Activity implements OnClickListener {
 
         try {
 
-
             serverSocket.receive(receivePacket);
-            Log.d(TAG, "Received a packet");
+            Log.i(TAG, "Received a packet");
 
             InetAddress sourceIPAddress = receivePacket.getAddress();
-            Log.d(TAG, "Source IP Address: " + sourceIPAddress);
+            Log.i(TAG, "Source IP Address:" + sourceIPAddress);
 
             String msgContents[] = new String(receivePacket.getData(), 0, receivePacket.getLength()).split(":");
-            String name = msgContents[0];
-            String message = msgContents[1];
+            Log.i(TAG, "Sender:" +  msgContents[0] + " Message:" + msgContents[1]);
 
-            Log.d(TAG, "Received from " + name + ": " + message);
+            Date timestamp = DateUtils.now();
+            Log.i(TAG, "Timestamp:" + timestamp);
+
 
             /*
              * TODO: Add message with sender to the display.
              */
+            messages.add(msgContents[0]+":"+msgContents[1]);
+            messageAdapter.notifyDataSetChanged();
 
             /*
              * End Todo
              */
+
+            Peer sender = new Peer();
+            sender.name = msgContents[0];
+            sender.timestamp = timestamp;
+            sender.address = sourceIPAddress;
+            peers.add(sender);
+
 
         } catch (Exception e) {
 
@@ -163,6 +191,7 @@ public class ChatServer extends Activity implements OnClickListener {
     }
 
     private void addPeer(Peer peer) {
+        Log.i(TAG, "IN:addPeer ChatServer");
         for (Peer p : peers) {
             if (p.name.equals(peer.name)) {
                 p.address = peer.address;
@@ -177,7 +206,8 @@ public class ChatServer extends Activity implements OnClickListener {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         // TODO inflate a menu with PEERS option
-
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.chatserver_menu, menu);
 
         return true;
     }
@@ -190,7 +220,8 @@ public class ChatServer extends Activity implements OnClickListener {
             case R.id.peers:
                 // TODO PEERS provide the UI for viewing list of peers
                 // Send the list of peers to the subactivity as a parcelable list
-
+                Intent peersIntent = new Intent(this, ViewPeersActivity.class);
+                startActivity(peersIntent);
                 break;
 
             default:

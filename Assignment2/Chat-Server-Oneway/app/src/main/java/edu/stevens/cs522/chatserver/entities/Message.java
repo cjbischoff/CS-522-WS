@@ -21,11 +21,15 @@ public class Message implements Parcelable {
 
     public long senderId;
 
-    public Message() {
-    }
+    public Message() {}
 
     public Message (Parcel in) {
         // TODO
+        id = in.readLong();
+        messageText = in.readString();
+        timestamp = (Date) in.readSerializable();
+        sender = in.readString();
+        senderId = in.readLong();
     }
 
     @Override
@@ -36,6 +40,11 @@ public class Message implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         // TODO
+        dest.writeLong(id);
+        dest.writeString(messageText);
+        dest.writeSerializable(timestamp);
+        dest.writeString(sender);
+        dest.writeLong(senderId);
     }
 
     public static final Creator<Message> CREATOR = new Creator<Message>() {
@@ -43,13 +52,13 @@ public class Message implements Parcelable {
         @Override
         public Message createFromParcel(Parcel source) {
             // TODO
-            return null;
+            return new Message(source);
         }
 
         @Override
         public Message[] newArray(int size) {
             // TODO
-            return null;
+            return new Message[size];
         }
 
     };
