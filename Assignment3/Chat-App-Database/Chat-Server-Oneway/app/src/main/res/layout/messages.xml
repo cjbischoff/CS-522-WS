@@ -6,7 +6,7 @@
 
     <ListView
         android:id="@+id/message_list"
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
         android:layout_height="0dip"
         android:layout_weight="1"
         android:stackFromBottom="true"
@@ -18,5 +18,4 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/next_label" />
-
 </LinearLayout>
