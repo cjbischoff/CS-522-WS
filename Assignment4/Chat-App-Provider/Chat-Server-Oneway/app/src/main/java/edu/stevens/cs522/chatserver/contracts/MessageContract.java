@@ -38,16 +38,16 @@ public class MessageContract extends BaseContract {
 
     // TODO remaining columns in Messages table
 
-    private int messageTextColumn = -1;
+    private static int messageTextColumn = -1;
 
-    public String getMessageText(Cursor cursor) {
+    public static String getMessageText(Cursor cursor) {
         if (messageTextColumn < 0) {
             messageTextColumn = cursor.getColumnIndexOrThrow(MESSAGE_TEXT);
         }
         return cursor.getString(messageTextColumn);
     }
 
-    public void putMessageText(ContentValues out, String messageText) {
+    public static void putMessageText(ContentValues out, String messageText) {
         out.put(MESSAGE_TEXT, messageText);
     }
 
