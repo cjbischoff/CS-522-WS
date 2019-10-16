@@ -7,11 +7,18 @@ import android.os.Parcelable;
 
 import java.util.Date;
 
+import edu.stevens.cs522.base.DateUtils;
+import edu.stevens.cs522.chatserver.contracts.MessageContract;
+
+import static edu.stevens.cs522.chatserver.contracts.MessageContract.TIMESTAMP;
+
 /**
  * Created by dduggan.
  */
 
-public class Message implements Parcelable, Persistable {
+//public class Message implements Parcelable, Persistable {
+public class Message implements Parcelable {
+
 
     public long id;
 
@@ -28,15 +35,28 @@ public class Message implements Parcelable, Persistable {
 
     public Message(Cursor cursor) {
         // TODO
+        messageText = MessageContract.getMessageText(cursor);
+        timestamp = DateUtils.getDate(cursor, 0);
+        sender = MessageContract.getSender(cursor);
+        senderId = MessageContract.getSenderId(cursor);
     }
 
     public Message(Parcel in) {
         // TODO
+        id = in.readLong();
+        messageText = in.readString();
+        timestamp = DateUtils.readDate(in);
+        sender = in.readString();
+        senderId = in.readLong();
     }
 
-    @Override
+
     public void writeToProvider(ContentValues out) {
         // TODO
+        MessageContract.putMessageText(out, this.messageText);
+        DateUtils.putDate(out, TIMESTAMP, this.timestamp);
+        MessageContract.putSender(out, this.sender);
+        MessageContract.putSenderId(out, this.senderId);
     }
 
     @Override
@@ -47,6 +67,11 @@ public class Message implements Parcelable, Persistable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         // TODO
+        dest.writeLong(id);
+        dest.writeString(messageText);
+        DateUtils.writeDate(dest, timestamp);
+        dest.writeString(sender);
+        dest.writeLong(senderId);
     }
 
     public static final Creator<Message> CREATOR = new Creator<Message>() {
@@ -54,16 +79,15 @@ public class Message implements Parcelable, Persistable {
         @Override
         public Message createFromParcel(Parcel source) {
             // TODO
-            return null;
+            return new Message(source);
         }
 
         @Override
         public Message[] newArray(int size) {
             // TODO
-            return null;
+            return new Message[size];
         }
 
     };
-
 }
 

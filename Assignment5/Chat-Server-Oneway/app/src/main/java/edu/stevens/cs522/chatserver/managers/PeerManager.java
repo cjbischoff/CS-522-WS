@@ -1,18 +1,24 @@
 package edu.stevens.cs522.chatserver.managers;
 
-import android.content.ContentResolver;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 import android.widget.CursorAdapter;
+
+import java.util.List;
 
 import edu.stevens.cs522.chatserver.async.AsyncContentResolver;
 import edu.stevens.cs522.chatserver.async.IContinue;
 import edu.stevens.cs522.chatserver.async.IEntityCreator;
-import edu.stevens.cs522.chatserver.async.IQueryListener;
+import edu.stevens.cs522.chatserver.async.QueryBuilder.IQueryListener;
+import edu.stevens.cs522.chatserver.async.SimpleQueryBuilder;
 import edu.stevens.cs522.chatserver.contracts.PeerContract;
 import edu.stevens.cs522.chatserver.entities.Peer;
+
+import static android.provider.BaseColumns._ID;
 
 
 /**
@@ -23,6 +29,8 @@ public class PeerManager extends Manager<Peer> {
 
     private static final int LOADER_ID = 2;
 
+    private Activity context;
+
     private static final IEntityCreator<Peer> creator = new IEntityCreator<Peer>() {
         @Override
         public Peer create(Cursor cursor) {
@@ -30,18 +38,86 @@ public class PeerManager extends Manager<Peer> {
         }
     };
 
-    public PeerManager(Context context) {
+    private AsyncContentResolver contentResolver;
+
+    public PeerManager(Activity context) {
         super(context, creator, LOADER_ID);
+        this.context = context;
+        contentResolver = new AsyncContentResolver(context.getContentResolver());
     }
 
+
     public void getAllPeersAsync(IQueryListener<Peer> listener) {
-        // TODO get a list of all peers in the database
+        Log.i("chatserver:PeerManager", "getAllPeersAsync");
+
         // use QueryBuilder to complete this
+        executeQuery(PeerContract.CONTENT_URI, null, null, null, listener);
+    }
+
+    public void getPeerAsync(long id, final IContinue<Peer> callback) {
+        Log.i("chatserver:PeerManager", "getPeerAsync");
+
+        // need to check that peer is not null (not in database)
+        executeSimpleQuery(PeerContract.CONTENT_URI(id), null, null, null, new SimpleQueryBuilder.ISimpleQueryListener<Peer>() {
+            @Override
+            public void handleResults(List<Peer> results) {
+                if (!results.isEmpty()) {
+                    Log.i("chatserver:PeerManager", "getPeerAsync/Peer Exists");
+                    callback.kontinue(results.get(0));
+                } else {
+                    Log.i("chatserver:PeerManager", "getPeerAsync/New Peer");
+                    callback.kontinue(null);
+                }
+            }
+        });
+    }
+
+
+    public void getPeerAsync(String name, final IContinue<Peer> callback) {
+        Log.i("chatserver:PeerManager", "getPeerAsync");
+
+        // need to check that peer is not null (not in database)
+        String selection = PeerContract.NAME + " = ?";
+        String[] selectionArgs = {name};
+
+        executeSimpleQuery(PeerContract.CONTENT_URI, null, selection, selectionArgs, new SimpleQueryBuilder.ISimpleQueryListener<Peer>() {
+            @Override
+            public void handleResults(List<Peer> results) {
+                if (!results.isEmpty()) {
+                    Log.i("chatserver:PeerManager", "getPeerAsync/Peer Exists");
+                    callback.kontinue(results.get(0));
+                } else {
+                    Log.i("chatserver:PeerManager", "getPeerAsync/New Peer");
+                    callback.kontinue(null);
+                }
+            }
+        });
     }
 
     public void persistAsync(Peer peer, final IContinue<Long> callback) {
-        // TODO upsert the peer into the database
-        // use AsyncContentResolver to complete this
+        Log.i("chatserver:PeerManager", "persistAsync");
+
+        // need to ensure the peer is not already in the database
+        final ContentValues values = new ContentValues();
+        peer.writeToProvider(values);
+        getPeerAsync(peer.name, new IContinue<Peer>() {
+            @Override
+            public void kontinue(Peer returnedPeer) {
+                if (returnedPeer != null) {
+                    Log.i("chatserver:PeerManager", "persistAsync/Update Peer");
+                    contentResolver.updateAsync(PeerContract.CONTENT_URI(returnedPeer.id), values, null, null);
+                    callback.kontinue(returnedPeer.id);
+                } else {
+                    contentResolver.insertAsync(PeerContract.CONTENT_URI, values, new IContinue<Uri>() {
+                        @Override
+                        public void kontinue(Uri uri) {
+                            callback.kontinue(PeerContract.getId(uri));
+                        }
+                    });
+
+                }
+            }
+        });
     }
 
 }

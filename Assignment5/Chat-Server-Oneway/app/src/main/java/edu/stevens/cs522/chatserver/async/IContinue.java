@@ -7,6 +7,6 @@ import static android.R.attr.value;
  */
 
 public interface IContinue<T> {
-    public void kontinue(T value);
+    void kontinue(T value);
 }
 

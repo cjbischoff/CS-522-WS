@@ -4,6 +4,6 @@ import android.content.ContentValues;
 
 public interface Persistable {
 
-    public void writeToProvider(ContentValues out);
+    void writeToProvider(ContentValues out);
 
 }

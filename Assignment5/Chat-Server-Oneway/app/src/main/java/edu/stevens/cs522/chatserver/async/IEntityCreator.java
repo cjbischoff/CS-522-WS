@@ -8,7 +8,7 @@ import android.database.Cursor;
 
 public interface IEntityCreator<T> {
 
-    public T create(Cursor cursor);
+    T create(Cursor cursor);
 
 }
 

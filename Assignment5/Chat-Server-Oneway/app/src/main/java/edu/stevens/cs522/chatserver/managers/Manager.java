@@ -4,11 +4,10 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import edu.stevens.cs522.chatserver.async.AsyncContentResolver;
 import edu.stevens.cs522.chatserver.async.IEntityCreator;
-import edu.stevens.cs522.chatserver.async.IQueryListener;
-import edu.stevens.cs522.chatserver.async.ISimpleQueryListener;
 import edu.stevens.cs522.chatserver.async.QueryBuilder;
 import edu.stevens.cs522.chatserver.async.SimpleQueryBuilder;
 
@@ -17,13 +16,14 @@ import edu.stevens.cs522.chatserver.async.SimpleQueryBuilder;
  * Created by dduggan.
  */
 
+
 public abstract class Manager<T> {
 
-    protected final Context context;
+    private final Context context;
 
     private final IEntityCreator<T> creator;
 
-    protected final int loaderID;
+    private final int loaderID;
 
     protected final String tag;
 
@@ -52,47 +52,30 @@ public abstract class Manager<T> {
         return asyncResolver;
     }
 
-    // TODO Provide operations for executing queries (see lectures)
-
-    protected void executeSimpleQuery(Uri uri,
-                                      ISimpleQueryListener<T> listener) {
-        // TODO
-    }
-
     protected void executeSimpleQuery(Uri uri,
                                       String[] projection,
                                       String selection,
                                       String[] selectionArgs,
-                                      ISimpleQueryListener<T> listener) {
-        // TODO
-    }
-
-    protected void executeQuery(Uri uri,
-                                IQueryListener<T> listener) {
-        // TODO
+                                      SimpleQueryBuilder.ISimpleQueryListener<T> listener) {
+        SimpleQueryBuilder.executeQuery((Activity) context,
+                uri, projection, selection, selectionArgs, creator, listener);
     }
 
     protected void executeQuery(Uri uri,
                                 String[] projection,
                                 String selection,
                                 String[] selectionArgs,
-                                String order,
-                                IQueryListener<T> listener) {
-        // TODO
-    }
-
-    protected void reexecuteQuery(Uri uri,
-                                  IQueryListener<T> listener) {
-        // TODO
+                                QueryBuilder.IQueryListener<T> listener) {
+        QueryBuilder.executeQuery(tag, (Activity) context, uri, projection,
+                selection, selectionArgs, loaderID, creator, listener);
     }
 
     protected void reexecuteQuery(Uri uri,
                                   String[] projection,
                                   String selection,
                                   String[] selectionArgs,
-                                  String order,
-                                  IQueryListener<T> listener) {
-        // TODO
+                                  QueryBuilder.IQueryListener<T> listener) {
+        QueryBuilder.reexecuteQuery(tag, (Activity) context, uri, projection,
+                selection, selectionArgs, loaderID, creator, listener);
     }
-
 }

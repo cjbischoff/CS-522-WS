@@ -1,11 +1,10 @@
 package edu.stevens.cs522.chatserver.async;
 
 import android.app.Activity;
-import android.app.LoaderManager;
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,45 +13,49 @@ import java.util.List;
 
 public class SimpleQueryBuilder<T> implements IContinue<Cursor>{
 
-    private String tag;
+    public interface ISimpleQueryListener<T> {
 
-    private IEntityCreator<T> creator;
+        void handleResults(List<T> results);
 
-    private IQueryListener<T> listener;
-
-    private SimpleQueryBuilder(String tag,
-                         IEntityCreator<T> creator,
-                         ISimpleQueryListener<T> listener) {
-        // TODO
     }
 
-    public static <T> void executeQuery(String tag,
-                                        Activity context,
-                                        Uri uri,
-                                        String[] columns,
-                                        String select,
-                                        String[] selectArgs,
-                                        IEntityCreator<T> creator,
-                                        ISimpleQueryListener<T> listener) {
+    // TODO Complete the implementation of this
+    private IEntityCreator<T> helper;
+    private ISimpleQueryListener<T> listener;
 
-        SimpleQueryBuilder<T> qb = new SimpleQueryBuilder<T>(tag, creator, listener);
-
-        AsyncContentResolver contentResolver = new AsyncContentResolver(context.getContentResolver());
-
-        contentResolver.queryAsync(uri, columns, select, selectArgs, null, qb);
+    private SimpleQueryBuilder(IEntityCreator<T> helper, ISimpleQueryListener<T> listener) {
+        this.helper = helper;
+        this.listener = listener;
     }
 
-    public static <T> void executeQuery(String tag,
-                                        Activity context,
-                                        Uri uri,
-                                        IEntityCreator<T> creator,
-                                        ISimpleQueryListener<T> listener) {
-        executeQuery(tag, context, uri, null, null, null, creator, listener);
+    public static <T> void executeQuery(Activity context, Uri uri, IEntityCreator<T> helper, ISimpleQueryListener<T> listener) {
+        SimpleQueryBuilder<T> qb = new SimpleQueryBuilder<>(helper, listener);
+
+        AsyncContentResolver resolver = new AsyncContentResolver(context.getContentResolver());
+
+        resolver.queryAsync(uri, null, null, null, null, qb);
+    }
+
+    public static <T> void executeQuery(Activity context, Uri uri, String[] projection, String selection, String[] selectionArgs, IEntityCreator<T> helper, ISimpleQueryListener<T> listener) {
+        SimpleQueryBuilder<T> qb = new SimpleQueryBuilder<>(helper, listener);
+
+        AsyncContentResolver resolver = new AsyncContentResolver(context.getContentResolver());
+
+        resolver.queryAsync(uri, projection, selection, selectionArgs, null, qb);
     }
 
     @Override
     public void kontinue(Cursor value) {
         // TODO complete this
+        List<T> instances = new ArrayList<>();
+        if(value.moveToFirst()) {
+            do {
+                T instance = helper.create(value);
+                instances.add(instance);
+            } while(value.moveToNext());
+        }
+        value.close();
+        listener.handleResults(instances);
     }
 
 }
