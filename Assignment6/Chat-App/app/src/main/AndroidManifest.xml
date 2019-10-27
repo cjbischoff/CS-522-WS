@@ -28,10 +28,15 @@
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings" />
 
+        <provider
+            android:name=".providers.ChatProvider"
+            android:authorities="edu.stevens.cs522.chat"
+            android:exported="false"/>
+
         <service
             android:name=".services.ChatService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false"/>
     </application>
 
 </manifest>

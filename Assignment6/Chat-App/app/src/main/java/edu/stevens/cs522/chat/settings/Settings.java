@@ -15,6 +15,9 @@ public class Settings {
 
     public static final String CHAT_NAME_KEY = "user-name";
 
+    public static final int DEFAULT_APP_PORT = 6666;
+    public static final String APP_PORT_KEY = "chat_port";
+
     public static void init(Context context) {
         getClientId(context);
     }
@@ -29,7 +32,7 @@ public class Settings {
             editor.putString(APPID_KEY, appID);
             String chatName = prefs.getString(CHAT_NAME_KEY, null);
             if (chatName == null) {
-                editor.putString(CHAT_NAME_KEY, context.getString(R.string.user_name_default));
+                editor.putString(CHAT_NAME_KEY, context.getString(R.string.default_user_name));
             }
             editor.commit();
         }

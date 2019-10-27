@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.preference.PreferenceFragment;
 
 import edu.stevens.cs522.chat.R;
-import edu.stevens.cs522.chat.settings.Settings;
 
 /**
  * Created by dduggan.
@@ -13,7 +12,13 @@ import edu.stevens.cs522.chat.settings.Settings;
 
 public class SettingsActivity extends Activity {
 
-    public static final String USERNAME_KEY = Settings.CHAT_NAME_KEY;
+    public static final String USERNAME_KEY = "username";
+
+    public static final String APP_PORT_KEY = "chat_port";
+
+    public static final String DEFAULT_USERNAME = "user";
+
+    public static final int DEFAULT_APP_PORT = 6666;
 
     public static class SettingsFragment extends PreferenceFragment {
 

@@ -3,6 +3,7 @@ package edu.stevens.cs522.chat.activities;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 
 import edu.stevens.cs522.chat.R;
 import edu.stevens.cs522.chat.entities.Peer;
@@ -31,6 +32,14 @@ public class ViewPeerActivity extends Activity {
         }
 
         // TODO init the UI
+        TextView textView = (TextView) findViewById(R.id.view_user_name);
+        textView.setText(peer.name);
+        textView = (TextView) findViewById(R.id.view_timestamp);
+        textView.setText(peer.timestamp.toString());
+        textView = (TextView) findViewById(R.id.view_address);
+        textView.setText(peer.address.toString());
+        textView = (TextView) findViewById(R.id.view_port);
+        textView.setText(String.valueOf(peer.port));
 
     }
 

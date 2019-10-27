@@ -4,8 +4,7 @@
     <string name="app_name">Chat App</string>
     <string name="user_name">Username</string>
     <string name="user_name_summary">Name by which user is identified in chat messages</string>
-    <string name="user_name_default">_default</string>
-    <integer name="app_port">6666</integer>
+    <string name="app_port">Chat Port</string>
     <string name="app_port_summary">Port that is used on this device for sending or receiving chat messages</string>
 
     <string name="latitude">40.744906</string>
@@ -36,5 +35,8 @@
 
     <string name="default_user_name">client</string>
     <string name="default_app_port">6666</string>
+
+    <string name="send_success">Message Sent!</string>
+    <string name="send_failure">Message failed to send!</string>
 
 </resources>
