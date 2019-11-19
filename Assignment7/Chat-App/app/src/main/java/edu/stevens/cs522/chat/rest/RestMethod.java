@@ -21,9 +21,9 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.Map;
 
+import edu.stevens.cs522.base.StringUtils;
 import edu.stevens.cs522.chat.R;
 import edu.stevens.cs522.chat.settings.Settings;
-import edu.stevens.cs522.base.StringUtils;
 
 /**
  * Created by dduggan.
@@ -94,14 +94,15 @@ public class RestMethod {
 
     private URL postMessageUri;
 
-    private URL syncMessagesUri;
-
     public RestMethod(Context context) {
         this.context = context;
         this.baseUri = context.getResources().getString(R.string.base_uri);
     }
 
     public Response perform(RegisterRequest request) {
+
+        Log.i("chatserver", "RestMethod/perform");
+
         URL url = registerURL(request.chatname);
         if (url == null) {
             throw new IllegalStateException("Missing URL for registering!");
@@ -122,6 +123,8 @@ public class RestMethod {
     }
 
     public Response perform(PostMessageRequest request) {
+        Log.i("chatserver", "RestMethod/perform");
+
         URL url = postMessageURL();
         if (url == null) {
             throw new IllegalStateException("Missing URL for posting messages!");
@@ -142,14 +145,18 @@ public class RestMethod {
     }
 
     private URL fromURI(String uri) {
+        Log.i("chatserver", "RestMethod/fromURI");
         try {
             return new URL(uri);
         } catch (MalformedURLException e) {
-            throw new IllegalStateException("Illegal state while attempting to register", e);
+            IllegalStateException ex = new IllegalStateException("Illegal state while attempting to register");
+            ex.initCause(e);
+            throw ex;
         }
     }
 
     private URL registerURL(String chatName) {
+        Log.i("chatserver", "RestMethod/registerURL");
 
         if (registerUri == null) {
             registerUri = fromURI(baseUri + "?chat-name=" + chatName);
@@ -158,6 +165,7 @@ public class RestMethod {
     }
 
     private URL postMessageURL() {
+        Log.i("chatserver", "RestMethod/postMessageURL");
 
         if (postMessageUri == null) {
             long senderId = Settings.getSenderId(context);
@@ -183,6 +191,7 @@ public class RestMethod {
             wakeLock = null;
         }
     }
+
     /**
      * Build and return a user-agent string that can identify this application to remote servers. Contains the package
      * name and version code.
@@ -220,9 +229,9 @@ public class RestMethod {
      * Initialize some generic HTTP headers for the request.
      */
     private void initConnection(URL url, Request request) throws IOException {
-		/*
-		 * Are we connected to a network?  Not the same as checking if the server is accessible....
-		 */
+        /*
+         * Are we connected to a network?  Not the same as checking if the server is accessible....
+         */
         checkOnline();
 
         // connection = (HttpsURLConnection) url.openConnection();
@@ -234,17 +243,17 @@ public class RestMethod {
         // Possible JB bug, don't pool connections: http://stackoverflow.com/q/20367647
         // connection.setRequestProperty(CONNECTION, "Keep-Alive");
         // connection.setRequestProperty(KEEP_ALIVE, "timeout="+keepAlive);
-        connection.setRequestProperty(CONNECTION,"Close");
+        connection.setRequestProperty(CONNECTION, "Close");
 
-		/*
-		 * App-specific headers
-		 */
-        Map<String,String> headers = request.getRequestHeaders();
-        for (Map.Entry<String,String> header : headers.entrySet()) {
+        /*
+         * App-specific headers
+         */
+        Map<String, String> headers = request.getRequestHeaders();
+        for (Map.Entry<String, String> header : headers.entrySet()) {
             if (header.getValue() != null) {
                 connection.addRequestProperty(header.getKey(), header.getValue());
             } else {
-                Log.w(TAG, "Ignoring empty header value for "+header.getKey());
+                Log.w(TAG, "Ignoring empty header value for " + header.getKey());
             }
         }
 
@@ -268,7 +277,7 @@ public class RestMethod {
         downloadConnection = connection.getInputStream();
         JsonReader rd = new JsonReader(new BufferedReader(new InputStreamReader(downloadConnection)));
         Response response = request.getResponse(connection, rd);
-        // rd.close(); TODO close connection?
+        // rd.close(); close connection?
         return response;
     }
 
@@ -277,9 +286,9 @@ public class RestMethod {
     }
 
     private Response executeOnewayRequest(String method, Request request) throws SocketTimeoutException, IOException {
-		/*
-		 * We do not expect a response entity, but there will still be response headers.
-		 */
+        /*
+         * We do not expect a response entity, but there will still be response headers.
+         */
         connection.setDoInput(false);
         connection.setRequestMethod(method);
         connection.setRequestProperty(CONTENT_TYPE, JSON_TYPE);
@@ -294,7 +303,7 @@ public class RestMethod {
     private void connect(Request request) throws IOException {
         String requestEntity = request.getRequestEntity();
         if (requestEntity != null) {
-            byte[] outputEntity = StringUtils.toBytes(requestEntity);
+            byte[] outputEntity = StringUtils.toBytes(requestEntity);  // Use StringUtils.CHARSET encoding (UTF-8)
             connection.setFixedLengthStreamingMode(outputEntity.length);
             uploadConnection = connection.getOutputStream();
             OutputStream out = new BufferedOutputStream(uploadConnection);
@@ -321,15 +330,19 @@ public class RestMethod {
      */
     public class StreamingResponse {
         private Response response;
+
         public StreamingResponse(Response response) {
             this.response = response;
         }
+
         public InputStream getInputStream() {
             return downloadConnection;
         }
+
         public Response getResponse() {
             return response;
         }
+
         public void disconnect() {
             closeConnection();
             releaseWakeLock();
@@ -337,19 +350,20 @@ public class RestMethod {
     }
 
     private StreamingResponse executeStreamingRequest(String method, Request request, StreamingOutput out, WakeLock wakeLock) throws SocketTimeoutException, IOException {
-		/*
-		 * We will stream output to the server, so the connection will be returned to the request processor
-		 * to write any output entity, stream the output, and read any input response.
-		 *
-		 * "out" is a callback to stream
-		 */
+        /*
+         * We will stream output to the server, so the connection will be returned to the request processor
+         * to write any output entity, stream the output, and read any input response.
+         *
+         * "out" is a callback to stream
+         */
         if (DEBUG) Log.d(TAG, "....Executing a streaming request.....");
         connection.setChunkedStreamingMode(0);
         connection.setRequestMethod(method);
 
         uploadConnection = connection.getOutputStream();
 
-        if (DEBUG) Log.d(TAG, "....No connection errors, writing output entity.....");
+        if (DEBUG)
+            Log.d(TAG, "....No connection errors, writing output entity.....");
         out.write(uploadConnection);
         uploadConnection.flush();
 
@@ -368,10 +382,10 @@ public class RestMethod {
     }
 
     private StreamingResponse executeStreamingRequest(Request request, WakeLock wakeLock) throws SocketTimeoutException, IOException {
-		/*
-		 * We will stream output to the server, so the connection will be returned to the request processor
-		 * to write any output entity, stream the output, and read any input response.
-		 */
+        /*
+         * We will stream output to the server, so the connection will be returned to the request processor
+         * to write any output entity, stream the output, and read any input response.
+         */
         if (DEBUG) Log.d(TAG, "....Executing a streaming request.....");
         connection.setChunkedStreamingMode(0);
         connection.setRequestMethod(GET_METHOD);
@@ -396,17 +410,17 @@ public class RestMethod {
                 + connection.getURL();
         sb.append(exceptionMessage);
         try {
-            InputStream es = ((HttpURLConnection)connection).getErrorStream();
+            InputStream es = ((HttpURLConnection) connection).getErrorStream();
             BufferedReader rd = new BufferedReader(new InputStreamReader(es, StringUtils.CHARSET));
             String line = rd.readLine();
             while (line != null) {
-                Log.w(TAG, "Error response entity: "+line);
+                Log.w(TAG, "Error response entity: " + line);
                 sb.append(line);
                 sb.append('\n');
                 line = rd.readLine();
             }
             rd.close();
-        } catch(IOException ex) {
+        } catch (IOException ex) {
             Log.e(TAG, "IO Exception while processing error response.", ex);
         }
         return sb.toString();

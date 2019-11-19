@@ -8,11 +8,13 @@ import android.os.Parcelable;
 import java.net.InetAddress;
 import java.util.Date;
 
+import edu.stevens.cs522.chat.contracts.PeerContract;
+
 /**
  * Created by dduggan.
  */
 
-public class Peer implements Parcelable, Persistable {
+public class Peer implements Parcelable {
 
     public long id;
 
@@ -26,20 +28,28 @@ public class Peer implements Parcelable, Persistable {
     public Double latitude;
 
     public Peer() {
+
     }
 
-    public Peer(Cursor cursor) {
-        // TODO
+    protected Peer(Parcel in) {
+        id = in.readLong();
+        name = in.readString();
+        timestamp = new Date(in.readLong());
+        longitude = in.readDouble();
+        latitude = in.readDouble();
     }
 
-    public Peer(Parcel in) {
-        // TODO
-    }
+    public static final Creator<Peer> CREATOR = new Creator<Peer>() {
+        @Override
+        public Peer createFromParcel(Parcel in) {
+            return new Peer(in);
+        }
 
-    @Override
-    public void writeToProvider(ContentValues out) {
-        // TODO
-    }
+        @Override
+        public Peer[] newArray(int size) {
+            return new Peer[size];
+        }
+    };
 
     @Override
     public int describeContents() {
@@ -47,23 +57,27 @@ public class Peer implements Parcelable, Persistable {
     }
 
     @Override
-    public void writeToParcel(Parcel out, int flags) {
-        // TODO
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeLong(id);
+        dest.writeString(name);
+        dest.writeLong(timestamp.getTime());
+        dest.writeDouble(longitude);
+        dest.writeDouble(latitude);
     }
 
-    public static final Creator<Peer> CREATOR = new Creator<Peer>() {
+    public Peer(Cursor cursor) {
+        id = PeerContract.getId(cursor);
+        name = PeerContract.getName(cursor);
+        timestamp = new Date(PeerContract.getTimestamp(cursor));
+        longitude = PeerContract.getLongitude(cursor);
+        latitude = PeerContract.getLatitude(cursor);
+    }
 
-        @Override
-        public Peer createFromParcel(Parcel source) {
-            // TODO
-            return null;
-        }
+    public void writeToProvider(ContentValues out) {
+        PeerContract.putName(out, name);
+        PeerContract.putTimestamp(out, timestamp.getTime());
+        PeerContract.putLongitude(out, longitude);
+        PeerContract.putLatitude(out, latitude);
+    }
 
-        @Override
-        public Peer[] newArray(int size) {
-            // TODO
-            return null;
-        }
-
-    };
 }

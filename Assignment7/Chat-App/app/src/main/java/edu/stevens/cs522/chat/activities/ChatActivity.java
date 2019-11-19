@@ -1,20 +1,22 @@
 /*********************************************************************
 
-    Chat server: accept chat messages from clients.
-    
-    Sender chatName and GPS coordinates are encoded
-    in the messages, and stripped off upon receipt.
+ Chat server: accept chat messages from clients.
 
-    Copyright (c) 2017 Stevens Institute of Technology
+ Sender chatName and GPS coordinates are encoded
+ in the messages, and stripped off upon receipt.
 
-**********************************************************************/
+ Copyright (c) 2017 Stevens Institute of Technology
+
+ **********************************************************************/
 package edu.stevens.cs522.chat.activities;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -22,33 +24,30 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.Toast;
 
 import edu.stevens.cs522.chat.R;
-import edu.stevens.cs522.chat.async.IQueryListener;
+import edu.stevens.cs522.chat.async.QueryBuilder;
+import edu.stevens.cs522.chat.contracts.MessageContract;
 import edu.stevens.cs522.chat.entities.ChatMessage;
 import edu.stevens.cs522.chat.managers.MessageManager;
-import edu.stevens.cs522.chat.managers.PeerManager;
 import edu.stevens.cs522.chat.managers.TypedCursor;
 import edu.stevens.cs522.chat.rest.ChatHelper;
 import edu.stevens.cs522.chat.settings.Settings;
 import edu.stevens.cs522.chat.services.ResultReceiverWrapper;
 
-public class ChatActivity extends Activity implements OnClickListener, IQueryListener<ChatMessage>, ResultReceiverWrapper.IReceive {
+public class ChatActivity extends Activity implements OnClickListener, QueryBuilder.IQueryListener<ChatMessage>, ResultReceiverWrapper.IReceive {
 
-	final static public String TAG = ChatActivity.class.getCanonicalName();
-		
+    final static public String TAG = ChatActivity.class.getCanonicalName();
+
     /*
      * UI for displaying received messages
      */
-	private SimpleCursorAdapter messages;
-	
-	private ListView messageList;
+    private ListView messageList;
 
     private SimpleCursorAdapter messagesAdapter;
 
     private MessageManager messageManager;
-
-    private PeerManager peerManager;
 
     /*
      * Widgets for dest address, message text, send button.
@@ -69,43 +68,73 @@ public class ChatActivity extends Activity implements OnClickListener, IQueryLis
      * For receiving ack when message is sent.
      */
     private ResultReceiverWrapper sendResultReceiver;
-	
-	/*
-	 * Called when the activity is first created. 
-	 */
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.messages);
+    /*
+     * Called when the activity is first created.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
 
-        // TODO use SimpleCursorAdapter to display the messages received.
+        Log.i("chatserver", "ChatActivity/oncreate");
 
-        // TODO create the message and peer managers, and initiate a query for all messages
-
-        // TODO instantiate helper for service
-
-        // TODO initialize sendResultReceiver
+        super.onCreate(savedInstanceState);
 
         /**
          * Initialize settings to default values.
          */
         if (!Settings.isRegistered(this)) {
-            // Launch registration activity
-            Settings.getAppId(this);
-            startActivity(new Intent(this, RegisterActivity.class));
+            // launch registration activity
+            Intent registerIntent = new Intent(this, RegisterActivity.class);
+            startActivity(registerIntent);
         }
 
+        setContentView(R.layout.messages);
+
+        // use SimpleCursorAdapter to display the messages received.
+        //String[] from = {MessageContract.SENDER, MessageContract.MESSAGE_TEXT};
+        //int[] to = {R.id.senderName, R.id.messageText};
+        //messagesAdapter = new SimpleCursorAdapter(this, R.layout.message_with_sender, null, from, to);
+        String[] from = new String[] { MessageContract.SENDER, MessageContract.MESSAGE_TEXT };
+        int[] to = new int[] { android.R.id.text1, android.R.id.text2 };
+        messagesAdapter = new SimpleCursorAdapter(this,
+                android.R.layout.simple_list_item_2,
+                null, from, to,
+                SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+
+
+        messageList = (ListView) findViewById(R.id.message_list);
+        messageList.setAdapter(messagesAdapter);
+
+        // create the message and peer managers, and initiate a query for all messages
+        messageManager = new MessageManager(this);
+        messageManager.getAllMessagesAsync(this);
+
+        // initialize sendResultReceiver
+        sendResultReceiver = new ResultReceiverWrapper(new Handler());
+
+        // instantiate helper for service
+        helper = new ChatHelper(this, sendResultReceiver);
+
+        chatRoomName = (EditText) findViewById(R.id.chat_room);
+        messageText = (EditText) findViewById(R.id.message_text);
+        sendButton = (Button) findViewById(R.id.send_button);
+        sendButton.setOnClickListener(this);
     }
 
-	public void onResume() {
+    public void onResume() {
+        Log.i("chatserver", "ChatActivity/onResume");
         super.onResume();
-        sendResultReceiver.setReceiver(this);
+        if (sendResultReceiver != null) {
+            sendResultReceiver.setReceiver(this);
+        }
     }
 
     public void onPause() {
+        Log.i("chatserver", "ChatActivity/onPause");
         super.onPause();
-        sendResultReceiver.setReceiver(null);
+        if (sendResultReceiver != null) {
+            sendResultReceiver.setReceiver(null);
+        }
     }
 
     public void onDestroy() {
@@ -115,7 +144,9 @@ public class ChatActivity extends Activity implements OnClickListener, IQueryLis
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        // TODO inflate a menu with PEERS and SETTINGS options
+        // inflate a menu with PEERS and SETTINGS options
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.chatserver_menu, menu);
 
         return true;
     }
@@ -123,18 +154,24 @@ public class ChatActivity extends Activity implements OnClickListener, IQueryLis
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
-        switch(item.getItemId()) {
+        switch (item.getItemId()) {
 
-            // TODO PEERS provide the UI for viewing list of peers
+            // PEERS provide the UI for viewing list of peers
             case R.id.peers:
+                Intent viewPeersIntent = new Intent(this, ViewPeersActivity.class);
+                startActivity(viewPeersIntent);
                 break;
 
-            // TODO PEERS provide the UI for registering
+            // REGISTER provide the UI for registering
             case R.id.register:
+                Intent registerIntent = new Intent(this, RegisterActivity.class);
+                startActivityForResult(registerIntent, RegisterActivity.REGISTER_REQUEST);
                 break;
 
-            // TODO SETTINGS provide the UI for settings
+            // SETTINGS provide the UI for settings
             case R.id.settings:
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivity(settingsIntent);
                 break;
 
             default:
@@ -143,21 +180,23 @@ public class ChatActivity extends Activity implements OnClickListener, IQueryLis
     }
 
 
-
     /*
      * Callback for the SEND button.
      */
     public void onClick(View v) {
+        Log.i("chatserver", "ChatActivity/onClick");
         if (helper != null) {
 
-            String chatRoom = chatRoomName.getText().toString();
+            String chatRoom;
 
-            String message = messageText.getText().toString();
+            String message;
 
-            // TODO use helper to post a message
+            // get chatRoom and message from UI, and use helper to post a message
+            chatRoom = chatRoomName.getText().toString().trim();
+            message = messageText.getText().toString().trim();
 
-
-            // End todo
+            // add the message to the database
+            helper.postMessage(chatRoom, message);
 
             Log.i(TAG, "Sent message: " + message);
 
@@ -166,28 +205,43 @@ public class ChatActivity extends Activity implements OnClickListener, IQueryLis
     }
 
     @Override
-    public void onReceiveResult(int resultCode, Bundle data) {
-        /*
-         * RequestService calls back with result of Web service request
-         */
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i("chatserver", "ChatActivity/onActivityResult");
         switch (resultCode) {
-            case RESULT_OK:
-                // TODO show a success toast message
+            case RegisterActivity.ALREADY_REGISTERED:
+                Toast.makeText(this, getString(R.string.already_registered), Toast.LENGTH_LONG).show();
                 break;
             default:
-                // TODO show a failure toast message
                 break;
         }
     }
 
     @Override
+    public void onReceiveResult(int resultCode, Bundle data) {
+        Log.i("chatserver", "ChatActivity/onReceiveResult");
+        String text;
+        switch (resultCode) {
+            case RESULT_OK:
+                // show a success toast message
+                text = getString(R.string.send_success);
+                break;
+            default:
+                // show a failure toast message
+                text = getString(R.string.send_failure);
+                break;
+        }
+        Toast toast = Toast.makeText(this, text, Toast.LENGTH_LONG);
+        toast.show();
+    }
+
+    @Override
     public void handleResults(TypedCursor<ChatMessage> results) {
-        // TODO
+        messagesAdapter.swapCursor(results.getCursor());
     }
 
     @Override
     public void closeResults() {
-        // TODO
+        messagesAdapter.swapCursor(null);
     }
 
 }

@@ -2,12 +2,8 @@ package edu.stevens.cs522.chat.settings;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import java.util.UUID;
-import java.util.prefs.Preferences;
-
-import edu.stevens.cs522.chat.R;
 
 /**
  * Created by dduggan.
@@ -15,29 +11,24 @@ import edu.stevens.cs522.chat.R;
 
 public class Settings {
 
-    public static final String SETTINGS = "settings";
+    private static String SETTINGS = "settings";
 
-    private static String APPID_KEY = "app-id";
+    public static String CLIENT_ID_KEY = "client-senderId";
 
-    private static String SENDER_ID_KEY = "sender-id";
+    private static String SENDER_ID_KEY = "sender-senderId";
 
-    private static final String CHAT_NAME_KEY = "user-name";
+    public static String CHAT_NAME_KEY = "user-name";
 
-    public static UUID getAppId(Context context) {
+    public static UUID getClientId(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-        // SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String appID = prefs.getString(APPID_KEY, null);
-        if (appID == null) {
-            appID = UUID.randomUUID().toString();
+        String clientID = prefs.getString(CLIENT_ID_KEY, null);
+        if (clientID == null) {
+            clientID = UUID.randomUUID().toString();
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString(APPID_KEY, appID);
-            String chatName = prefs.getString(CHAT_NAME_KEY, null);
-            if (chatName == null) {
-                editor.putString(CHAT_NAME_KEY, context.getString(R.string.user_name_default));
-            }
+            editor.putString(CLIENT_ID_KEY, clientID);
             editor.commit();
         }
-        return UUID.fromString(appID);
+        return UUID.fromString(clientID);
     }
 
     public static long getSenderId(Context context) {
@@ -53,21 +44,17 @@ public class Settings {
 
     public static String getChatName(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-        // SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         return prefs.getString(CHAT_NAME_KEY, null);
     }
 
     public static void saveChatName(Context context, String chatName) {
         SharedPreferences.Editor editor = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE).edit();
-        // SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
         editor.putString(CHAT_NAME_KEY, chatName);
         editor.commit();
     }
 
     public static boolean isRegistered(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-        // SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return prefs.getLong(SENDER_ID_KEY, -1) >= 0;
+        return getSenderId(context) >= 0;
     }
 
 }

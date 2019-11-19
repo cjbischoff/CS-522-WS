@@ -3,12 +3,13 @@ package edu.stevens.cs522.chat.rest;
 import android.content.Context;
 import android.content.Intent;
 import android.os.ResultReceiver;
-import android.widget.Toast;
 
 import java.util.UUID;
 
-import edu.stevens.cs522.chat.R;
 import edu.stevens.cs522.chat.settings.Settings;
+import edu.stevens.cs522.chat.services.ResultReceiverWrapper;
+
+import static android.app.Activity.RESULT_CANCELED;
 
 
 /**
@@ -24,33 +25,59 @@ public class ChatHelper {
     // Provided by server when we register
     private long senderId;
 
-    // Installation id created when the app is installed (and provided with every request for sanity check)
+    // Installation senderId created when the app is installed (and provided with every request for sanity check)
     private UUID clientID;
 
-    public ChatHelper(Context context) {
+    private ResultReceiverWrapper receiver;
+
+    public ChatHelper(Context context, ResultReceiverWrapper receiver) {
         this.context = context;
-        this.clientID = Settings.getAppId(context);
+        this.clientID = Settings.getClientId(context);
+        this.receiver = receiver;
     }
 
-    public void register (String chatName, ResultReceiver resultReceiver) {
-        if (Settings.isRegistered(context)) {
-            Toast.makeText(context, R.string.already_registered, Toast.LENGTH_LONG).show();
+    // provide a result receiver that will update sender senderId (and add us to peer database)
+    // and display a toast message upon completion
+    public void register(String chatName) {
+        this.senderId = Settings.getSenderId(context);
+        if (senderId > 0) {
+            // error we are already registered
+            if (receiver != null) {
+                receiver.send(RESULT_CANCELED, null);
+            }
             return;
         }
         if (chatName != null && !chatName.isEmpty()) {
+            RegisterRequest request = new RegisterRequest(chatName, clientID);
+            this.senderId = Settings.getSenderId(context);
+            if (senderId > 0) {
+                // error we are already registered
+                if (receiver != null) {
+                    receiver.send(RESULT_CANCELED, null);
+                }
+                return;
+            }
             Settings.saveChatName(context, chatName);
-            // TODO add a registration request to the request queue (see addRequest)
-
+            addRequest(request, receiver);
         }
     }
 
-    public void postMessage(String chatRoom, String text, ResultReceiver receiver) {
-        if (text != null && !text.isEmpty()) {
+    // provide a result receiver that will display a toast message upon completion
+    public void postMessage(String chatRoom, String message) {
+        this.senderId = Settings.getSenderId(context);
+        if (senderId <= 0) {
+            // error we are not registered
+            if (receiver != null) {
+                receiver.send(RESULT_CANCELED, null);
+            }
+            return;
+        }
+        if (message != null && !message.isEmpty()) {
             if (chatRoom == null || chatRoom.isEmpty()) {
                 chatRoom = DEFAULT_CHAT_ROOM;
             }
-            // TODO add a post message request to the request queue (see addRequest)
-
+            PostMessageRequest request = new PostMessageRequest(senderId, clientID, chatRoom, message);
+            addRequest(request, receiver);
         }
     }
 

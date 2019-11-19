@@ -1,5 +1,6 @@
 package edu.stevens.cs522.chat.rest;
 
+import android.content.res.Resources;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.JsonReader;
@@ -55,7 +56,7 @@ public abstract class Request implements Parcelable {
     public StatusType status;
 
     // Installation id
-    public UUID appID;
+    public UUID clientID;
 
     // App version
     public long version;
@@ -76,13 +77,13 @@ public abstract class Request implements Parcelable {
         this.senderId = id;
         this.status = StatusType.PENDING;
         this.timestamp = DateUtils.now();
-        this.appID = clientID;
+        this.clientID = clientID;
     }
 
     protected Request(Request request) {
         senderId = request.senderId;
         status = request.status;
-        appID = request.appID;
+        clientID = request.clientID;
         version = request.version;
         timestamp = request.timestamp;
         longitude = request.longitude;
@@ -91,18 +92,34 @@ public abstract class Request implements Parcelable {
     }
 
     protected Request(Parcel in) {
-        // TODO assume tag has already been read, this will be called by subclass constructor
+        // assume tag has already been read, this will be called by subclass constructor
+        senderId = in.readLong();
+        status = StatusType.valueOf(in.readString());
+        clientID = (UUID) in.readSerializable();
+        version = in.readLong();
+        timestamp = new Date(in.readLong());
+        longitude = in.readDouble();
+        latitude = in.readDouble();
+        responseMessage = in.readString();
     }
 
     @Override
     public void writeToParcel(Parcel out, int flags) {
-        // TODO subclasses write tag, then call this, then write out their own fields
+        // subclasses write tag, then call this, then write out their own fields
+        out.writeLong(senderId);
+        out.writeString(status.name());
+        out.writeSerializable(clientID);
+        out.writeLong(version);
+        out.writeLong(timestamp.getTime());
+        out.writeDouble(longitude);
+        out.writeDouble(latitude);
+        out.writeString(responseMessage);
     }
 
     /*
      * HTTP request headers
      */
-    public static String APP_ID_HEADER = "X-App-Id";
+    public static String CLIENT_ID_HEADER = "X-Client-Id";
 
     public static String TIMESTAMP_HEADER = "X-Timestamp";
 
@@ -113,7 +130,7 @@ public abstract class Request implements Parcelable {
     // App-specific HTTP request headers.
     public Map<String,String> getRequestHeaders() {
         Map<String,String> headers = new HashMap<>();
-        headers.put(APP_ID_HEADER, appID.toString());
+        headers.put(CLIENT_ID_HEADER, clientID.toString());
         headers.put(TIMESTAMP_HEADER, Long.toString(timestamp.getTime()));
         headers.put(LONGITUDE_HEADER, Double.toString(longitude));
         headers.put(LATITUDE_HEADER, Double.toString(latitude));

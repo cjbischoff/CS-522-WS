@@ -2,6 +2,8 @@ package edu.stevens.cs522.chat.rest;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Config;
+import android.util.Log;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -25,10 +27,10 @@ public abstract class Response implements Parcelable {
 
     public final static String RESPONSE_MESSAGE_HEADER = "X-Response-Message";
 
-	/*
-	 * These fields are obtained from the response metadata (response headers and status line).
-	 * The fields in the subclass responses are obtained from the JSON body of the response entity.
-	 */
+    /*
+     * These fields are obtained from the response metadata (response headers and status line).
+     * The fields in the subclass responses are obtained from the JSON body of the response entity.
+     */
 
     // Human-readable response message (optional)
     public String responseMessage = "";
@@ -43,14 +45,14 @@ public abstract class Response implements Parcelable {
 
     public Response(HttpURLConnection connection) throws IOException {
 
-//        String message = connection.getHeaderField(RESPONSE_MESSAGE_HEADER);
-//        if (message != null) {
-//            responseMessage = message;
-//        }
-//
-//        httpResponseCode = connection.getResponseCode();
-//
-//        httpResponseMessage = connection.getResponseMessage();
+        String message = connection.getHeaderField(RESPONSE_MESSAGE_HEADER);
+        if (message != null) {
+            responseMessage = message;
+        }
+
+        httpResponseCode = connection.getResponseCode();
+
+        httpResponseMessage = connection.getResponseMessage();
 
     }
 
@@ -61,31 +63,17 @@ public abstract class Response implements Parcelable {
     }
 
     public Response(Parcel in) {
-        if (in.readByte() == 1) {
-            responseMessage = in.readString();
-        }
+        responseMessage = in.readString();
         httpResponseCode = in.readInt();
-        if (in.readByte() == 1) {
-            httpResponseMessage = in.readString();
-        }
+        httpResponseMessage = in.readString();
     }
 
     @Override
     public void writeToParcel(Parcel out, int flags) {
-        if (responseMessage != null) {
-            out.writeByte((byte)1);
-            out.writeString(responseMessage);
-        } else {
-            out.writeByte((byte)0);
-        }
+        out.writeString(responseMessage);
         out.writeInt(httpResponseCode);
-        if (httpResponseMessage != null) {
-            out.writeByte((byte)1);
-            out.writeString(httpResponseMessage);
-        } else {
-            out.writeByte((byte)0);
-        }
-        out.writeString(httpResponseMessage);}
+        out.writeString(httpResponseMessage);
+    }
 
     public int describeContents() {
         return 0;
@@ -115,5 +103,7 @@ public abstract class Response implements Parcelable {
             return new Response[size];
         }
     };
+
+
 
 }

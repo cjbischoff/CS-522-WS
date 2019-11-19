@@ -5,6 +5,7 @@ import android.os.Parcel;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.UUID;
 
 /**
  * Created by dduggan.
@@ -27,7 +28,9 @@ public class PostMessageResponse extends Response {
     }
 
     @Override
-    public boolean isValid() { return true; }
+    public boolean isValid() {
+        return true;
+    }
 
     @Override
     public int describeContents() {
@@ -36,12 +39,13 @@ public class PostMessageResponse extends Response {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        // TODO
+        super.writeToParcel(dest, flags);
+        dest.writeLong(messageId);
     }
 
     public PostMessageResponse(Parcel in) {
         super(in);
-        // TODO
+        messageId = in.readLong();
     }
 
     public static Creator<PostMessageResponse> CREATOR = new Creator<PostMessageResponse>() {

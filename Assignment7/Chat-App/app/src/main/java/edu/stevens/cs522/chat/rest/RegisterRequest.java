@@ -1,5 +1,6 @@
 package edu.stevens.cs522.chat.rest;
 
+import android.net.Uri;
 import android.os.Parcel;
 import android.util.JsonReader;
 
@@ -24,9 +25,7 @@ public class RegisterRequest extends Request {
 
     @Override
     public Map<String, String> getRequestHeaders() {
-        Map<String,String> headers = new HashMap<>();
-        // TODO add headers
-        return headers;
+        return super.getRequestHeaders();
     }
 
     @Override
@@ -57,7 +56,7 @@ public class RegisterRequest extends Request {
 
     public RegisterRequest(Parcel in) {
         super(in);
-        this.chatname = in.readString();
+        chatname = in.readString();
     }
 
     public static Creator<RegisterRequest> CREATOR = new Creator<RegisterRequest>() {
